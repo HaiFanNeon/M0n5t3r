@@ -14,7 +14,6 @@ import kotlinx.serialization.Serializer
 
 class DrawingModel {
 
-
     data class RealCoordinates(
         override var panX: Float = 0f,
         override var panY: Float = 0f,

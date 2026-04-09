@@ -5,7 +5,7 @@
 # =========================
 
 .gradle/
-build/
+app/build/
 **/build/
 
 # Local configuration file (sdk path等本地配置)

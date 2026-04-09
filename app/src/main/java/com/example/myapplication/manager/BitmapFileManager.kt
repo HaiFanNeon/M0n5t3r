@@ -28,7 +28,6 @@ class BitmapFileManager(private val context: Context) {
             FileOutputStream(file).use { fos ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
             }
-
             val json = gson.toJson(cdt)
             val jsonFile = File(context.filesDir, "coordinates.json")
             FileOutputStream(jsonFile).use { fos ->
@@ -57,10 +56,8 @@ class BitmapFileManager(private val context: Context) {
     suspend fun exportDraft(bitmap: Bitmap) : Result<Unit> = withContext(Dispatchers.IO){
         val exportBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(exportBitmap)
-        canvas.save()
         canvas.drawColor(Color.WHITE)
         canvas.drawBitmap(bitmap, 0f, 0f, null)
-        canvas.restore()
 
         val filename = "${System.currentTimeMillis()}.png"
         val resolver = context.contentResolver
