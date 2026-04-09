@@ -1,0 +1,121 @@
+# =========================
+
+# Gradle
+
+# =========================
+
+.gradle/
+build/
+**/build/
+
+# Local configuration file (sdk path等本地配置)
+
+local.properties
+
+# =========================
+
+# Android Studio / IntelliJ
+
+# =========================
+
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Android Studio 3+ 推荐保留部分配置（可选）
+
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# =========================
+
+# Keystore（非常重要！不要提交）
+
+# =========================
+
+*.jks
+*.keystore
+
+# =========================
+
+# Generated files
+
+# =========================
+
+captures/
+.externalNativeBuild/
+.cxx/
+
+# =========================
+
+# Log / temp
+
+# =========================
+
+*.log
+*.tmp
+*.temp
+
+# =========================
+
+# OS 文件
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# Kotlin
+
+# =========================
+
+*.class
+*.kotlin_module
+
+# =========================
+
+# NDK
+
+# =========================
+
+obj/
+
+# =========================
+
+# Firebase / Google Services（按需）
+
+# =========================
+
+google-services.json
+
+# =========================
+
+# Fastlane（如果你用的话）
+
+# =========================
+
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# =========================
+
+# Others
+
+# =========================
+
+*.apk
+*.ap_
+*.aab
+
+# Proguard
+
+proguard/
