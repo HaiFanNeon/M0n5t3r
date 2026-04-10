@@ -48,17 +48,13 @@ class DrawingView @JvmOverloads constructor(
         private set
     private lateinit var bitmap: Bitmap
     private lateinit var bitmapCanvas: Canvas
-
     val transformMatrix = Matrix()
     private val inverseMatrix = Matrix()
-
     var onSaveBitmapListener : (() -> Unit)? = null
-
     private var lastTouchX = 0f
     private var lastTouchY = 0f
     private var initialDistance = 0f
     private var initialRotation = 0f
-
     private var drawPaint = Paint().apply {
         color = Color.BLACK
         strokeWidth = 8f
@@ -67,7 +63,6 @@ class DrawingView @JvmOverloads constructor(
         strokeCap = Paint.Cap.ROUND
         isAntiAlias = true
     }
-
     private var erasePaint = Paint().apply {
         color = Color.WHITE
         strokeWidth = 30f
@@ -110,10 +105,10 @@ class DrawingView @JvmOverloads constructor(
 
         val isReviewMode = getModel() == ReviewMode.REVIEW
 
-        if (isReviewMode) {
-            return reviewTouchEvent(event, x, y)
+        return if (isReviewMode) {
+            reviewTouchEvent(event, x, y)
         } else {
-            return editTouchEvent(event, x, y)
+            editTouchEvent(event, x, y)
         }
     }
 
@@ -137,15 +132,7 @@ class DrawingView @JvmOverloads constructor(
         val dy = event.getY(1) - event.getY(0)
         return Math.toDegrees(kotlin.math.atan2(dy, dx).toDouble()).toFloat()
     }
-    fun setEraseMode() {
-        setEdit()
-        pathData.drawingTool = DrawingTool.ERASE
-    }
 
-    fun setBrushMode() {
-        setEdit()
-        pathData.drawingTool = DrawingTool.BRUSH
-    }
 
     fun setBitmap(bitmap: Bitmap) {
         val newBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
@@ -163,23 +150,29 @@ class DrawingView @JvmOverloads constructor(
             bitmapCanvas = Canvas(bitmap)
         }
         bitmapCanvas.drawColor(Color.WHITE)
-        setEraseMode()
         transformMatrix.reset()
         inverseMatrix.reset()
         pathData.curPath.reset()
         onSaveBitmapListener?.invoke()
         invalidate()
     }
-    fun setReview() {
-        reviewMode = ReviewMode.REVIEW
-    }
-    fun setEdit() {
-        reviewMode = ReviewMode.NONE
-        invalidate()
-    }
+
     private fun getModel(): ReviewMode {
         return reviewMode
     }
+
+    fun updateConfig(tool: DrawingTool, color: Int, stroke: Float, eraseSize: Float) {
+        pathData.drawingTool = tool
+        drawPaint.color = color
+        drawPaint.strokeWidth = stroke
+        erasePaint.strokeWidth = eraseSize
+        invalidate()
+    }
+
+    fun setMode(mode: ReviewMode) {
+        reviewMode = mode
+    }
+
 
     private fun undo() : Boolean {
         return true
@@ -195,7 +188,7 @@ class DrawingView @JvmOverloads constructor(
     }
 
     private fun getPaint() : Paint {
-        return if (pathData.drawingTool == DrawingTool.BRUSH) drawPaint else erasePaint
+        return if (pathData.drawingTool == DrawingTool.ERASE) erasePaint else drawPaint
     }
 
     private fun extBitmap(x: Float, y:Float) {

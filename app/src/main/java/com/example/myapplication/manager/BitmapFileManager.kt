@@ -21,7 +21,6 @@ import java.io.FileOutputStream
 import java.io.OutputStream
 
 class BitmapFileManager(private val context: Context) {
-
     suspend fun saveDraft(bitmap: Bitmap, matrix: FloatArray): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try{
             val file = File(context.filesDir, "test.png")

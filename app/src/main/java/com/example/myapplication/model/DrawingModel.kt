@@ -11,69 +11,15 @@ import com.example.myapplication.enum.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Serializer
 
+data class DrawingUiState(
+    val reviewMode: ReviewMode = ReviewMode.NONE,
+    val drawingTool: DrawingTool = DrawingTool.NONE,
+    val color: Int = Color.BLACK,
+    val brushSize: Float = 8f,
+    val eraseSize: Float = 30f
+)
 
 class DrawingModel {
-
-    data class RealCoordinates(
-        override var panX: Float = 0f,
-        override var panY: Float = 0f,
-
-        override var lastMidX: Float = 0f,
-        override var lastMidY: Float = 0f,
-
-        override var lastX: Float = 0f,
-        override var lastY: Float = 0f,
-
-        override var scale: Float = 1f,
-        override var lastDistance: Float = 0f,
-
-        override var rotation: Float = 0f,
-        override var lastRotation: Float = 0f,
-
-        override var initDistance: Float = 0f,
-        override var initRotation: Float = 0f,
-        override var initMidX: Float = 0f,
-        override var initMidY: Float = 0f
-    ) : Coordinates {
-
-
-        fun calcX(x: Float): Float {
-            return (x - panX - lastMidX) / scale + lastMidX
-        }
-        fun calcY(y: Float): Float {
-            return (y - panY - lastMidY) / scale + lastMidY
-        }
-
-        fun toCanvasX(x: Float) {
-            this.lastX = calcX(x)
-        }
-        fun toCanvasY(y: Float) {
-            this.lastY = calcY(y)
-        }
-    }
-
-    data class ReviewCoordinates (
-        override var panX: Float = 0f,
-        override var panY: Float = 0f,
-
-        override var lastMidX: Float = 0f,
-        override var lastMidY: Float = 0f,
-
-        override var lastX: Float = 0f,
-        override var lastY: Float = 0f,
-
-        override var scale: Float = 1f,
-        override var lastDistance: Float = 0f,
-
-        override var rotation: Float = 0f,
-        override var lastRotation: Float = 0f,
-
-        override var initDistance: Float = 0f,
-        override var initRotation: Float = 0f,
-        override var initMidX: Float = 0f,
-        override var initMidY: Float = 0f
-    ) : Coordinates{
-    }
 
     /**
      * color：线的颜色
