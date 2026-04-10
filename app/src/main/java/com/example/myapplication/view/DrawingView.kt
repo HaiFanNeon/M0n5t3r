@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
@@ -38,17 +39,25 @@ class DrawingView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr), DrawingInterface {
+) : View(context, attrs, defStyleAttr) {
 
     val pathData = PathData()
     var reviewMode = ReviewMode.NONE
-    var realCoordinates: RealCoordinates = RealCoordinates()
-    var reviewCoordinates: ReviewCoordinates = ReviewCoordinates()
+
     var touchType: TouchType = TouchType.NONE
+        private set
     private lateinit var bitmap: Bitmap
     private lateinit var bitmapCanvas: Canvas
 
+    val transformMatrix = Matrix()
+    private val inverseMatrix = Matrix()
+
     var onSaveBitmapListener : (() -> Unit)? = null
+
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
+    private var initialDistance = 0f
+    private var initialRotation = 0f
 
     private var drawPaint = Paint().apply {
         color = Color.BLACK
@@ -59,7 +68,7 @@ class DrawingView @JvmOverloads constructor(
         isAntiAlias = true
     }
 
-    private var earsePaint = Paint().apply {
+    private var erasePaint = Paint().apply {
         color = Color.WHITE
         strokeWidth = 30f
         style = Paint.Style.STROKE
@@ -74,7 +83,6 @@ class DrawingView @JvmOverloads constructor(
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        Log.i("testtest", w.toString() + "===" + h.toString())
         if (w > 0 && h > 0 && !::bitmap.isInitialized) {
             bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             bitmapCanvas = Canvas(bitmap)
@@ -84,13 +92,11 @@ class DrawingView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val cdt = getCoordinates()
         canvas.save()
-        canvas.translate(cdt.panX, cdt.panY)
-        canvas.scale(cdt.scale, cdt.scale, cdt.lastMidX, cdt.lastMidY)
-        canvas.rotate(cdt.rotation, cdt.lastMidX, cdt.lastMidY)
+        canvas.concat(transformMatrix)
         canvas.drawColor(Color.WHITE)
         canvas.drawBitmap(bitmap, 0f, 0f, null)
+        canvas.drawPath(pathData.curPath, getPaint())
         canvas.restore()
     }
 
@@ -111,7 +117,7 @@ class DrawingView @JvmOverloads constructor(
         }
     }
 
-    override fun getDistance(event: MotionEvent) : Float {
+    private fun getDistance(event: MotionEvent) : Float {
         if (event.pointerCount < 2) return 0f
         val dx = event.getX(0) - event.getX(1)
         val dy = event.getY(0) - event.getY(1)
@@ -119,98 +125,77 @@ class DrawingView @JvmOverloads constructor(
         return kotlin.math.sqrt(dx * dx + dy * dy)
     }
 
-    override fun getMidPoint(event: MotionEvent) : Pair<Float, Float> {
+    private fun getMidPoint(event: MotionEvent) : Pair<Float, Float> {
         val dx = (event.getX(0) + event.getX(1)) / 2f
         val dy = (event.getY(0) + event.getY(1)) / 2f
 
         return Pair(dx, dy)
     }
 
-    override fun getAngle(event: MotionEvent): Float {
+    private fun getAngle(event: MotionEvent): Float {
         val dx = event.getX(1) - event.getX(0)
         val dy = event.getY(1) - event.getY(0)
         return Math.toDegrees(kotlin.math.atan2(dy, dx).toDouble()).toFloat()
     }
-    override fun setEraseMode() {
+    fun setEraseMode() {
         setEdit()
         pathData.drawingTool = DrawingTool.ERASE
     }
 
-    override fun setBrushMode() {
+    fun setBrushMode() {
         setEdit()
         pathData.drawingTool = DrawingTool.BRUSH
     }
 
-    override fun setBitmap(bitmap: Bitmap) {
+    fun setBitmap(bitmap: Bitmap) {
         val newBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
         this.bitmap = newBitmap
         bitmapCanvas = Canvas(this.bitmap)
         invalidate()
     }
 
-    override fun getBitmap(): Bitmap {
+    fun getBitmap(): Bitmap {
         return bitmap
     }
-    override fun clear() {
+    fun clear() {
         if (width > 0 && height > 0) {
             bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             bitmapCanvas = Canvas(bitmap)
         }
         bitmapCanvas.drawColor(Color.WHITE)
         setEraseMode()
-        realCoordinates.clear()
-        reviewCoordinates.clear()
-        pathData.undoStk.clear()
-        pathData.redoStk.clear()
+        transformMatrix.reset()
+        inverseMatrix.reset()
+        pathData.curPath.reset()
         onSaveBitmapListener?.invoke()
         invalidate()
     }
-    override fun setReview() {
+    fun setReview() {
         reviewMode = ReviewMode.REVIEW
     }
-    override fun setEdit() {
+    fun setEdit() {
         reviewMode = ReviewMode.NONE
-        realCoordinates.copyFrom(reviewCoordinates)
         invalidate()
     }
-    override fun getModel(): ReviewMode {
+    private fun getModel(): ReviewMode {
         return reviewMode
     }
 
-    override fun undo() : Boolean {
+    private fun undo() : Boolean {
         return true
     }
 
-    override fun redo(): Boolean {
+    private fun redo(): Boolean {
         return true
     }
 
-    override fun gettRealCoordinates(): RealCoordinates {
-        return realCoordinates
-    }
-
-    override fun gettReviewCoordinates(): ReviewCoordinates {
-        return reviewCoordinates
-    }
-
-    override fun settRealCoordinates(other: Coordinates) {
-        realCoordinates.copyFrom(other)
-    }
-
-    override fun settReviewCoordinates(other: Coordinates) {
-        reviewCoordinates.copyFrom(other)
-    }
 
     private fun drawPathAll() {
         return
     }
 
     private fun getPaint() : Paint {
-        return if (pathData.drawingTool == DrawingTool.BRUSH) drawPaint else earsePaint
-    }
-
-    private fun getCoordinates(): Coordinates {
-        return if (getModel() == ReviewMode.REVIEW) reviewCoordinates else realCoordinates
+        return if (pathData.drawingTool == DrawingTool.BRUSH) drawPaint else erasePaint
     }
 
     private fun extBitmap(x: Float, y:Float) {
@@ -230,13 +215,13 @@ class DrawingView @JvmOverloads constructor(
             drawBitmap(bitmap, offsetX, offsetY, null)
         }
 
-        realCoordinates.panX -= offsetX
-        realCoordinates.panY -= offsetY
-        realCoordinates.lastX += offsetX
-        realCoordinates.lastY += offsetY
-        reviewCoordinates.copyFrom(realCoordinates)
+        transformMatrix.preTranslate(-offsetX, -offsetY)
 
         pathData.curPath.offset(offsetX, offsetY)
+
+        editLastY += offsetY
+        editLastX += offsetX
+
         bitmap = newBitmap
         bitmapCanvas = newCanvas
     }
@@ -244,150 +229,106 @@ class DrawingView @JvmOverloads constructor(
     private fun reviewTouchEvent(event: MotionEvent, x: Float, y: Float): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                touchType = TouchType.Gesture(GestureType.MOVE)
-                reviewCoordinates.lastX = x
-                reviewCoordinates.lastY = y
+                lastTouchX = x
+                lastTouchY = y
                 return true
             }
 
             MotionEvent.ACTION_POINTER_DOWN -> {
-                if (event.pointerCount >= 2) {
-                    touchType = TouchType.Gesture(GestureType.NONE)
-                    val (midX, midY) = getMidPoint(event)
-                    reviewCoordinates.initMidX = midX
-                    reviewCoordinates.initMidY = midY
-                    reviewCoordinates.initDistance = getDistance(event)
-                    reviewCoordinates.initRotation = getAngle(event)
-
-                    reviewCoordinates.lastMidX = midX
-                    reviewCoordinates.lastMidY = midY
-                    reviewCoordinates.lastDistance = reviewCoordinates.initDistance
-                    reviewCoordinates.lastRotation = reviewCoordinates.initRotation
+                if (event.pointerCount == 2) {
+                    initialDistance = getDistance(event)
+                    initialRotation = getAngle(event)
                 }
             }
 
             MotionEvent.ACTION_MOVE -> {
-                when(val t = touchType) {
-                    is TouchType.Gesture -> {
-                        if (event.pointerCount < 2) {
-                            reviewCoordinates.panX += x - reviewCoordinates.lastX
-                            reviewCoordinates.panY += y - reviewCoordinates.lastY
-                            reviewCoordinates.lastX = x
-                            reviewCoordinates.lastY = y
+                if (event.pointerCount == 1) {
+                    val dx = x - lastTouchX
+                    val dy = y - lastTouchY
+                    transformMatrix.postTranslate(dx, dy)
+                    lastTouchX = x
+                    lastTouchY = y
+                    invalidate()
+                } else if (event.pointerCount >= 2) {
+                    val newDistance = getDistance(event)
+                    val newRotation = getAngle(event)
 
-                        } else {
-                            val newDistance = getDistance(event)
-                            val newRotation = getAngle(event)
-                            val (midX, midY) = getMidPoint(event)
+                    val (midX, midY) = getMidPoint(event)
 
-                            var currentGesture = t.type
-
-                            if (currentGesture == GestureType.NONE) {
-                                val distanceDiff = kotlin.math.abs(newDistance - reviewCoordinates.initDistance)
-                                var angleDiff = kotlin.math.abs(newRotation - reviewCoordinates.initRotation)
-
-                                if (angleDiff > 180) angleDiff = 360 - angleDiff
-
-                                currentGesture = when {
-                                    distanceDiff > 40f-> GestureType.SCALE
-                                    angleDiff > 8f -> GestureType.ROTATE
-                                    else -> GestureType.NONE
-                                }
-
-                                if (currentGesture != GestureType.NONE) {
-                                    touchType = TouchType.Gesture(currentGesture)
-                                    reviewCoordinates.lastDistance = newDistance
-                                    reviewCoordinates.lastRotation = newRotation
-                                    reviewCoordinates.lastMidX = midX
-                                    reviewCoordinates.lastMidY = midY
-                                }
-                            }
-                            when (currentGesture) {
-                                GestureType.SCALE -> {
-                                    if (reviewCoordinates.lastDistance > 0) {
-                                        val scaleFactor = newDistance / reviewCoordinates.lastDistance
-                                        reviewCoordinates.scale *= scaleFactor
-                                    }
-                                }
-                                GestureType.ROTATE -> {
-                                    var angleDiff = newRotation - reviewCoordinates.lastRotation
-                                    if (angleDiff > 180) angleDiff -= 360
-                                    if (angleDiff < -180) angleDiff += 360
-                                    reviewCoordinates.rotation += angleDiff
-                                }
-                                else -> {}
-                            }
-                            reviewCoordinates.lastDistance = newDistance
-                            reviewCoordinates.lastRotation = newRotation
-                            reviewCoordinates.lastMidX = midX
-                            reviewCoordinates.lastMidY = midY
-                        }
-                        invalidate()
+                    if (initialDistance > 0) {
+                        val scaleFactor = newDistance / initialDistance
+                        transformMatrix.postScale(scaleFactor, scaleFactor, midX, midY)
                     }
-                    else -> {}
+                    var angleDiff = newRotation - initialRotation
+                    if (angleDiff > 180) angleDiff -= 360
+                    if (angleDiff < 180) angleDiff += 360
+                    transformMatrix.postRotate(angleDiff, midX, midY)
+                    initialRotation = newRotation
+                    initialDistance = newDistance
+                    lastTouchY = y
+                    lastTouchX = x
                 }
+                invalidate()
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                touchType = TouchType.NONE
+                if (event.actionMasked == MotionEvent.ACTION_POINTER_UP && event.pointerCount == 2) {
+                    val remainingPointerIndex = if (event.actionIndex == 0) 1 else 0
+                    lastTouchX = event.getX(remainingPointerIndex)
+                    lastTouchY = event.getY(remainingPointerIndex)
+                }
                 onSaveBitmapListener?.invoke()
             }
         }
         return super.onTouchEvent(event)
     }
 
+    private var editLastX = 0f
+    private var editLastY = 0f
+
     private fun editTouchEvent(event: MotionEvent, x: Float, y: Float): Boolean {
+        transformMatrix.invert(inverseMatrix)
+        val pts = floatArrayOf(x, y)
+        inverseMatrix.mapPoints(pts)
+        val canvasX = pts[0]
+        val canvasY = pts[1]
+
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                touchType = TouchType.PEN
-                val canvasX = realCoordinates.calcX(x)
-                val canvasY = realCoordinates.calcY(y)
+
                 extBitmap(canvasX, canvasY)
-                realCoordinates.toCanvasY(y)
-                realCoordinates.toCanvasX(x)
+                pts[0] = x
+                pts[1] = y
+                transformMatrix.invert(inverseMatrix)
+                inverseMatrix.mapPoints(pts)
                 pathData.curPath.reset()
-                pathData.curPath.moveTo(realCoordinates.lastX, realCoordinates.lastY)
+                pathData.curPath.moveTo(pts[0], pts[1])
+                editLastX = pts[0]
+                editLastY = pts[1]
                 return true
             }
 
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                if (event.pointerCount >= 2) {
-                    touchType = TouchType.NONE
-                }
-            }
-
             MotionEvent.ACTION_MOVE -> {
-                when(val t = touchType) {
-                    is TouchType.PEN -> {
-                        var canvasX = realCoordinates.calcX(x)
-                        var canvasY = realCoordinates.calcY(y)
-                        extBitmap(canvasX, canvasY)
-                        canvasX = realCoordinates.calcX(x)
-                        canvasY = realCoordinates.calcY(y)
-                        pathData.curPath.quadTo(realCoordinates.lastX, realCoordinates.lastY,
-                            (realCoordinates.lastX + canvasX) / 2f, (realCoordinates.lastY + canvasY) / 2f)
-                        realCoordinates.toCanvasX(x)
-                        realCoordinates.toCanvasY(y)
-                        val paint = if (pathData.drawingTool == DrawingTool.ERASE) earsePaint else drawPaint
-                        bitmapCanvas.drawPath(pathData.curPath, paint)
-                        invalidate()
-                    }
-                    else -> {}
-                }
+
+                extBitmap(canvasX, canvasY)
+
+                pts[0] = x
+                pts[1] = y
+                transformMatrix.invert(inverseMatrix)
+                inverseMatrix.mapPoints(pts)
+                pathData.curPath.quadTo(pts[0], pts[1], (editLastX + pts[0]) / 2f, (editLastY + pts[1]) / 2f)
+                editLastX = pts[0]
+                editLastY = pts[1]
+
+                invalidate()
             }
 
             MotionEvent.ACTION_UP -> {
-                val paint = if (pathData.drawingTool == DrawingTool.ERASE) earsePaint else drawPaint
+                val paint = if (pathData.drawingTool == DrawingTool.ERASE) erasePaint else drawPaint
                 bitmapCanvas.drawPath(pathData.curPath, paint)
                 pathData.curPath.reset()
-                touchType = TouchType.NONE
                 onSaveBitmapListener?.invoke()
-            }
-
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (event.pointerCount <= 2) {
-                    touchType = TouchType.NONE
-                }
+                invalidate()
             }
         }
         return super.onTouchEvent(event)

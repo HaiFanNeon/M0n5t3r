@@ -1,5 +1,6 @@
 package com.example.myapplication
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -43,19 +44,21 @@ class MainActivity : ComponentActivity(), View.OnClickListener{
 
     private fun save() {
         val bp = drawingView.getBitmap()
-        val cdt = drawingView.gettReviewCoordinates()
         lifecycleScope.launch{
-            bitmapFileManager.saveDraft(bp, cdt)
+            val values = FloatArray(9)
+            drawingView.transformMatrix.getValues(values)
+            bitmapFileManager.saveDraft(bp, values)
         }
     }
 
     private fun loadDraw() {
         val loadDraft = bitmapFileManager.loadDraft()
         if (loadDraft != null) {
-
+            val matrix = Matrix().apply {
+                setValues(loadDraft.second)
+            }
             drawingView.setBitmap(loadDraft.first)
-            drawingView.settRealCoordinates(loadDraft.second)
-            drawingView.settReviewCoordinates(loadDraft.second)
+            drawingView.transformMatrix.set(matrix)
         }
 
     }

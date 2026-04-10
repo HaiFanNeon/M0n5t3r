@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.os.Build
 import android.provider.MediaStore
 import android.util.JsonReader
@@ -21,14 +22,14 @@ import java.io.OutputStream
 
 class BitmapFileManager(private val context: Context) {
 
-    suspend fun saveDraft(bitmap: Bitmap, cdt: Coordinates): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun saveDraft(bitmap: Bitmap, matrix: FloatArray): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try{
             val file = File(context.filesDir, "test.png")
             val gson = Gson()
             FileOutputStream(file).use { fos ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
             }
-            val json = gson.toJson(cdt)
+            val json = gson.toJson(matrix)
             val jsonFile = File(context.filesDir, "coordinates.json")
             FileOutputStream(jsonFile).use { fos ->
                 fos.write(json.toByteArray(Charsets.UTF_8))
@@ -40,7 +41,7 @@ class BitmapFileManager(private val context: Context) {
         }
     }
 
-    fun loadDraft(): Pair<Bitmap, DrawingModel.ReviewCoordinates>? {
+    fun loadDraft(): Pair<Bitmap, FloatArray>? {
         val file = File(context.filesDir, "test.png")
         if (!file.exists()) {
             Log.i("testtest", "first open app")
@@ -48,9 +49,19 @@ class BitmapFileManager(private val context: Context) {
         }
 
         val json = File(context.filesDir, "coordinates.json")
+        if (!json.exists()) {
+            return null
+        }
+        var values = FloatArray(9) {0f}
+        values[0] = 1f
+        values[4] = 1f
+        values[8] = 1f
         val jsonString = json.readText(Charsets.UTF_8)
-        val coordinates = Gson().fromJson(jsonString, DrawingModel.ReviewCoordinates::class.java)
-        return Pair(BitmapFactory.decodeFile(file.absolutePath), coordinates)
+        val prase = Gson().fromJson(jsonString, FloatArray::class.java)
+        if (prase != null && prase.size == 0) {
+            values = prase
+        }
+        return Pair(BitmapFactory.decodeFile(file.absolutePath), values)
     }
 
     suspend fun exportDraft(bitmap: Bitmap) : Result<Unit> = withContext(Dispatchers.IO){

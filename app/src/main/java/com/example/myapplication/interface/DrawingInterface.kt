@@ -19,7 +19,6 @@ interface DrawingInterface {
     fun getDistance(event: MotionEvent) : Float
     fun getMidPoint(event: MotionEvent) : Pair<Float, Float>
     fun getAngle(event: MotionEvent): Float
-
     // 获取bitmap
     fun getBitmap(): Bitmap
     fun setBitmap(bitmap: Bitmap)
@@ -37,11 +36,4 @@ interface DrawingInterface {
     // 回退
     fun undo(): Boolean
     fun redo(): Boolean
-
-    // 获取坐标信息
-    fun gettReviewCoordinates(): DrawingModel.ReviewCoordinates
-    fun gettRealCoordinates(): DrawingModel.RealCoordinates
-    fun settReviewCoordinates(other: Coordinates)
-    fun settRealCoordinates(other: Coordinates)
-
 }
