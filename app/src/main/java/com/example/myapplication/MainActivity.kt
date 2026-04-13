@@ -37,6 +37,8 @@ class MainActivity : ComponentActivity(), View.OnClickListener{
     private lateinit var btnClear: Button
     private lateinit var btnExport: Button
     private lateinit var sbStrokeWidth: SeekBar
+    private lateinit var btnUndo: Button
+    private lateinit var btnRedo: Button
 
     @SuppressLint("WrongViewCast", "MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,11 +61,15 @@ class MainActivity : ComponentActivity(), View.OnClickListener{
         btnClear = findViewById(R.id.btnClear)
         btnExport = findViewById(R.id.btnExport)
         sbStrokeWidth = findViewById(R.id.sbStrokeWidth)
+        btnUndo = findViewById(R.id.btnUndo)
+        btnRedo = findViewById(R.id.btnRedo)
         btnBrush.setOnClickListener(this)
         btnErase.setOnClickListener(this)
         btnPreview.setOnClickListener(this)
         btnClear.setOnClickListener(this)
         btnExport.setOnClickListener(this)
+        btnUndo.setOnClickListener(this)
+        btnRedo.setOnClickListener(this)
         findViewById<Button>(R.id.btnColorBlack).setOnClickListener(this)
         findViewById<Button>(R.id.btnColorBlue).setOnClickListener(this)
         val textView = findViewById<TextView>(R.id.tvStrokeWidth)
@@ -163,6 +169,12 @@ class MainActivity : ComponentActivity(), View.OnClickListener{
             }
             R.id.btnColorBlue -> {
                 viewModel.setBrushColor(Color.BLUE)
+            }
+            R.id.btnUndo -> {
+                drawingView.undo()
+            }
+            R.id.btnRedo -> {
+                drawingView.redo()
             }
         }
     }

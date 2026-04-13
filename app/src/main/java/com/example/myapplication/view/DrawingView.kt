@@ -1,24 +1,14 @@
 package com.example.myapplication.view
 
 import android.annotation.SuppressLint
-import android.content.ClipData
-import android.content.ClipDescription
-import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
-import android.net.Uri
 import android.os.Build
 
 import android.util.AttributeSet
-import android.util.Log
 
 import android.view.MotionEvent
 import android.view.View
@@ -26,18 +16,15 @@ import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.core.graphics.createBitmap
 import com.example.myapplication.enum.*
-import com.example.myapplication.ext.clear
-import com.example.myapplication.ext.copyFrom
-import com.example.myapplication.`interface`.Coordinates
-import com.example.myapplication.model.DrawingModel.*
+import com.example.myapplication.factory.BrushFactory
+import com.example.myapplication.strategy.brush.BaseBrush
 
 class DrawingView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
-
-    val pathData = PathData()
+    private var currentTool = DrawingTool.NONE
     private lateinit var bitmap: Bitmap
     private lateinit var bitmapCanvas: Canvas
     val transformMatrix = Matrix()
@@ -47,22 +34,7 @@ class DrawingView @JvmOverloads constructor(
     private var lastTouchY = 0f
     private var initialDistance = 0f
     private var initialRotation = 0f
-    private var drawPaint = Paint().apply {
-        color = Color.BLACK
-        strokeWidth = 8f
-        style = Paint.Style.STROKE
-        strokeJoin = Paint.Join.ROUND
-        strokeCap = Paint.Cap.ROUND
-        isAntiAlias = true
-    }
-    private var erasePaint = Paint().apply {
-        color = Color.WHITE
-        strokeWidth = 30f
-        style = Paint.Style.STROKE
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-        isAntiAlias = true
-    }
+    private var currentBrush: BaseBrush? = null
 
     init {
         setLayerType(View.LAYER_TYPE_SOFTWARE, null)
@@ -83,7 +55,10 @@ class DrawingView @JvmOverloads constructor(
         canvas.concat(transformMatrix)
         canvas.drawColor(Color.WHITE)
         canvas.drawBitmap(bitmap, 0f, 0f, null)
-        canvas.drawPath(pathData.curPath, getPaint())
+        
+        if (getModel() != DrawingTool.REVIEW) {
+            currentBrush?.drawPreview(canvas)
+        }
         canvas.restore()
     }
 
@@ -94,9 +69,7 @@ class DrawingView @JvmOverloads constructor(
         if (!::bitmap.isInitialized) return false
         val x: Float = event.x
         val y: Float = event.y
-
         val isReviewMode = getModel() == DrawingTool.REVIEW
-
         return if (isReviewMode) {
             reviewTouchEvent(event, x, y)
         } else {
@@ -144,38 +117,27 @@ class DrawingView @JvmOverloads constructor(
         bitmapCanvas.drawColor(Color.WHITE)
         transformMatrix.reset()
         inverseMatrix.reset()
-        pathData.curPath.reset()
+        currentBrush?.path?.reset()
         onSaveBitmapListener?.invoke()
         invalidate()
     }
 
     private fun getModel(): DrawingTool {
-        return pathData.drawingTool
+        return currentTool
     }
 
     fun updateConfig(tool: DrawingTool, color: Int, stroke: Float, eraseSize: Float) {
-        pathData.drawingTool = tool
-        drawPaint.color = color
-        drawPaint.strokeWidth = stroke
-        erasePaint.strokeWidth = eraseSize
+        currentTool = tool
+        currentBrush = BrushFactory.create(tool, color, stroke, eraseSize)
         invalidate()
     }
 
-    private fun undo() : Boolean {
+    fun undo() : Boolean {
         return true
     }
 
-    private fun redo(): Boolean {
+    fun redo(): Boolean {
         return true
-    }
-
-
-    private fun drawPathAll() {
-        return
-    }
-
-    private fun getPaint() : Paint {
-        return if (pathData.drawingTool == DrawingTool.ERASE) erasePaint else drawPaint
     }
 
     private fun extBitmap(x: Float, y:Float) {
@@ -197,7 +159,7 @@ class DrawingView @JvmOverloads constructor(
 
         transformMatrix.preTranslate(-offsetX, -offsetY)
 
-        pathData.curPath.offset(offsetX, offsetY)
+        currentBrush?.path?.offset(offsetX, offsetY)
 
         editLastY += offsetY
         editLastX += offsetX
@@ -281,8 +243,9 @@ class DrawingView @JvmOverloads constructor(
                 pts[1] = y
                 transformMatrix.invert(inverseMatrix)
                 inverseMatrix.mapPoints(pts)
-                pathData.curPath.reset()
-                pathData.curPath.moveTo(pts[0], pts[1])
+                
+                currentBrush?.onTouchDown(pts[0], pts[1])
+                
                 editLastX = pts[0]
                 editLastY = pts[1]
                 return true
@@ -296,7 +259,9 @@ class DrawingView @JvmOverloads constructor(
                 pts[1] = y
                 transformMatrix.invert(inverseMatrix)
                 inverseMatrix.mapPoints(pts)
-                pathData.curPath.quadTo(pts[0], pts[1], (editLastX + pts[0]) / 2f, (editLastY + pts[1]) / 2f)
+                
+                currentBrush?.onTouchMove(pts[0], pts[1], editLastX, editLastY)
+                
                 editLastX = pts[0]
                 editLastY = pts[1]
 
@@ -304,9 +269,7 @@ class DrawingView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP -> {
-                val paint = if (pathData.drawingTool == DrawingTool.ERASE) erasePaint else drawPaint
-                bitmapCanvas.drawPath(pathData.curPath, paint)
-                pathData.curPath.reset()
+                currentBrush?.onTouchUp(bitmapCanvas)
                 onSaveBitmapListener?.invoke()
                 invalidate()
             }
