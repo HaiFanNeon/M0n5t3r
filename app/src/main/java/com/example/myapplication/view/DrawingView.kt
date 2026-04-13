@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.PorterDuff
 import android.os.Build
 
 import android.util.AttributeSet
@@ -17,6 +18,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.graphics.createBitmap
 import com.example.myapplication.enum.*
 import com.example.myapplication.factory.BrushFactory
+import com.example.myapplication.strategy.action.PathAction
 import com.example.myapplication.strategy.brush.BaseBrush
 
 class DrawingView @JvmOverloads constructor(
@@ -36,6 +38,11 @@ class DrawingView @JvmOverloads constructor(
     private var initialRotation = 0f
     private var currentBrush: BaseBrush? = null
 
+    private val undoStk: ArrayDeque<PathAction> = ArrayDeque()
+    private val redoStk: ArrayDeque<PathAction> = ArrayDeque()
+
+    private var baseLayerBitmap: Bitmap? = null
+
     init {
         setLayerType(View.LAYER_TYPE_SOFTWARE, null)
     }
@@ -43,9 +50,11 @@ class DrawingView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w > 0 && h > 0 && !::bitmap.isInitialized) {
-            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            baseLayerBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply {
+                Canvas(this).drawColor(Color.WHITE)
+            }
+            bitmap = baseLayerBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
             bitmapCanvas = Canvas(bitmap)
-            bitmapCanvas.drawColor(Color.WHITE)
         }
     }
 
@@ -99,10 +108,15 @@ class DrawingView @JvmOverloads constructor(
     }
 
 
-    fun setBitmap(bitmap: Bitmap) {
-        val newBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        this.bitmap = newBitmap
+    fun setBitmap(sourceBitmap: Bitmap) {
+        // 保存一份最原始的底板
+        baseLayerBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, true)
+        
+        this.bitmap = baseLayerBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
         bitmapCanvas = Canvas(this.bitmap)
+        
+        undoStk.clear()
+        redoStk.clear()
         invalidate()
     }
 
@@ -111,14 +125,20 @@ class DrawingView @JvmOverloads constructor(
     }
     fun clear() {
         if (width > 0 && height > 0) {
-            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            baseLayerBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+                Canvas(this).drawColor(Color.WHITE)
+            }
+            bitmap = baseLayerBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
             bitmapCanvas = Canvas(bitmap)
+        } else {
+            bitmapCanvas.drawColor(Color.WHITE)
         }
-        bitmapCanvas.drawColor(Color.WHITE)
         transformMatrix.reset()
         inverseMatrix.reset()
         currentBrush?.path?.reset()
         onSaveBitmapListener?.invoke()
+        undoStk.clear()
+        redoStk.clear()
         invalidate()
     }
 
@@ -133,11 +153,31 @@ class DrawingView @JvmOverloads constructor(
     }
 
     fun undo() : Boolean {
+        if (undoStk.isEmpty()) return false
+        redoStk.addLast(undoStk.removeLast())
+        redrawAll()
         return true
     }
 
     fun redo(): Boolean {
+        if (redoStk.isEmpty()) return false
+        undoStk.addLast(redoStk.removeLast())
+        undoStk.last().draw(bitmapCanvas)
+        invalidate()
         return true
+    }
+
+    fun redrawAll() {
+        bitmapCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+        baseLayerBitmap?.let { originalBase ->
+            bitmapCanvas.drawBitmap(originalBase, 0f, 0f, null)
+        } ?: run {
+            bitmapCanvas.drawColor(Color.WHITE)
+        }
+        undoStk.forEach { it ->
+            it.draw(bitmapCanvas)
+        }
+        invalidate()
     }
 
     private fun extBitmap(x: Float, y:Float) {
@@ -157,7 +197,24 @@ class DrawingView @JvmOverloads constructor(
             drawBitmap(bitmap, offsetX, offsetY, null)
         }
 
+        // 同步扩展兜底底板，保证重绘时的背景不会乱跳和面积丢失！
+        baseLayerBitmap?.let { oldBase ->
+            val newBase = createBitmap(newWeight, newHeight)
+            Canvas(newBase).apply {
+                drawColor(Color.WHITE)
+                drawBitmap(oldBase, offsetX, offsetY, null)
+            }
+            baseLayerBitmap = newBase
+        }
+
         transformMatrix.preTranslate(-offsetX, -offsetY)
+
+        undoStk.forEach { action ->
+            action.offset(offsetX, offsetY)
+        }
+        redoStk.forEach { action ->
+            action.offset(offsetX, offsetY)
+        }
 
         currentBrush?.path?.offset(offsetX, offsetY)
 
@@ -269,7 +326,10 @@ class DrawingView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP -> {
-                currentBrush?.onTouchUp(bitmapCanvas)
+                currentBrush?.onTouchUp(bitmapCanvas)?.let {
+                    undoStk.addLast(it)
+                    redoStk.clear()
+                }
                 onSaveBitmapListener?.invoke()
                 invalidate()
             }
