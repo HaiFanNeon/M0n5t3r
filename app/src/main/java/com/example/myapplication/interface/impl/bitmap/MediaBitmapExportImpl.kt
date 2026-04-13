@@ -1,4 +1,4 @@
-package com.example.myapplication.strategy.bitmap
+package com.example.myapplication.`interface`.impl.bitmap
 
 import android.content.ContentValues
 import android.content.Context
@@ -8,13 +8,14 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import com.example.myapplication.`interface`.BitmapExportStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class MediaBitmapExportStrategy(
+class MediaBitmapExportImpl(
     private val context: Context
-) : BitmapExportStrategy{
+) : BitmapExportStrategy {
     override suspend fun export(bitmap: Bitmap): Result<Unit> = withContext(Dispatchers.IO){
         val exportBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(exportBitmap)
@@ -39,7 +40,6 @@ class MediaBitmapExportStrategy(
             }
         }
         try {
-            // 3. 插入数据库并获取输出流
             val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                 ?: throw Exception("Failed to create new MediaStore record.")
 

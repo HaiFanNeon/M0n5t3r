@@ -1,11 +1,12 @@
-package com.example.myapplication.strategy.action
+package com.example.myapplication.`interface`.impl.action
 
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import com.example.myapplication.`interface`.DrawAction
 
 
-class PathAction(val paint: Paint, val path: Path): DrawAction {
+class PathActionImpl(val paint: Paint, val path: Path): DrawAction {
     override fun draw(canvas: Canvas) {
         canvas.drawPath(path, paint)
     }

@@ -15,9 +15,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.myapplication.config.DrawingViewModelFactory
 import com.example.myapplication.enum.DrawingTool
 import com.example.myapplication.manager.BitmapFileManager
-import com.example.myapplication.strategy.bitmap.BitmapRoomStrategy
-import com.example.myapplication.strategy.bitmap.FileDraftStrategy
-import com.example.myapplication.strategy.bitmap.MediaBitmapExportStrategy
+import com.example.myapplication.`interface`.impl.bitmap.BitmapRoomImpl
+import com.example.myapplication.`interface`.impl.bitmap.FileDraftImpl
+import com.example.myapplication.`interface`.impl.bitmap.MediaBitmapExportImpl
 import com.example.myapplication.view.DrawingView
 import com.example.myapplication.viewModel.DrawingViewModel
 import kotlinx.coroutines.launch
@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity(), View.OnClickListener{
         setContentView(R.layout.activity_main)
         drawingView = findViewById<DrawingView>(R.id.drawingView)
         bitmapFileManager = BitmapFileManager(
-            saveStrategy = BitmapRoomStrategy(this),
-            loadStrategy = FileDraftStrategy(this),
-            exportStrategy = MediaBitmapExportStrategy(this),
+            saveStrategy = BitmapRoomImpl(this),
+            loadStrategy = FileDraftImpl(this),
+            exportStrategy = MediaBitmapExportImpl(this),
         )
         loadDraw()
         drawingView.onSaveBitmapListener = {

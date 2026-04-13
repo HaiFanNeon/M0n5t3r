@@ -18,8 +18,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.graphics.createBitmap
 import com.example.myapplication.enum.*
 import com.example.myapplication.factory.BrushFactory
-import com.example.myapplication.strategy.action.PathAction
-import com.example.myapplication.strategy.brush.BaseBrush
+import com.example.myapplication.`interface`.impl.action.PathActionImpl
+import com.example.myapplication.`interface`.BaseBrush
 
 class DrawingView @JvmOverloads constructor(
     context: Context,
@@ -38,10 +38,10 @@ class DrawingView @JvmOverloads constructor(
     private var initialRotation = 0f
     private var currentBrush: BaseBrush? = null
 
-    private val undoStk: ArrayDeque<PathAction> = ArrayDeque()
-    private val redoStk: ArrayDeque<PathAction> = ArrayDeque()
+    private val undoStk: ArrayDeque<PathActionImpl> = ArrayDeque()
+    private val redoStk: ArrayDeque<PathActionImpl> = ArrayDeque()
 
-    private var baseLayerBitmap: Bitmap? = null
+    private var baseBitmap: Bitmap? = null
 
     init {
         setLayerType(View.LAYER_TYPE_SOFTWARE, null)
@@ -50,10 +50,10 @@ class DrawingView @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (w > 0 && h > 0 && !::bitmap.isInitialized) {
-            baseLayerBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply {
+            baseBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply {
                 Canvas(this).drawColor(Color.WHITE)
             }
-            bitmap = baseLayerBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
+            bitmap = baseBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
             bitmapCanvas = Canvas(bitmap)
         }
     }
@@ -109,10 +109,9 @@ class DrawingView @JvmOverloads constructor(
 
 
     fun setBitmap(sourceBitmap: Bitmap) {
-        // 保存一份最原始的底板
-        baseLayerBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, true)
+        baseBitmap = sourceBitmap.copy(Bitmap.Config.ARGB_8888, true)
         
-        this.bitmap = baseLayerBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
+        this.bitmap = baseBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
         bitmapCanvas = Canvas(this.bitmap)
         
         undoStk.clear()
@@ -125,10 +124,10 @@ class DrawingView @JvmOverloads constructor(
     }
     fun clear() {
         if (width > 0 && height > 0) {
-            baseLayerBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+            baseBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
                 Canvas(this).drawColor(Color.WHITE)
             }
-            bitmap = baseLayerBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
+            bitmap = baseBitmap!!.copy(Bitmap.Config.ARGB_8888, true)
             bitmapCanvas = Canvas(bitmap)
         } else {
             bitmapCanvas.drawColor(Color.WHITE)
@@ -168,8 +167,8 @@ class DrawingView @JvmOverloads constructor(
     }
 
     fun redrawAll() {
-        bitmapCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-        baseLayerBitmap?.let { originalBase ->
+        bitmapCanvas.drawColor(Color.WHITE)
+        baseBitmap?.let { originalBase ->
             bitmapCanvas.drawBitmap(originalBase, 0f, 0f, null)
         } ?: run {
             bitmapCanvas.drawColor(Color.WHITE)
@@ -197,14 +196,13 @@ class DrawingView @JvmOverloads constructor(
             drawBitmap(bitmap, offsetX, offsetY, null)
         }
 
-        // 同步扩展兜底底板，保证重绘时的背景不会乱跳和面积丢失！
-        baseLayerBitmap?.let { oldBase ->
+        baseBitmap?.let { oldBase ->
             val newBase = createBitmap(newWeight, newHeight)
             Canvas(newBase).apply {
                 drawColor(Color.WHITE)
                 drawBitmap(oldBase, offsetX, offsetY, null)
             }
-            baseLayerBitmap = newBase
+            baseBitmap = newBase
         }
 
         transformMatrix.preTranslate(-offsetX, -offsetY)

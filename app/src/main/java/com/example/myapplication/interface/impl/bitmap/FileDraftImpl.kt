@@ -1,14 +1,16 @@
-package com.example.myapplication.strategy.bitmap
+package com.example.myapplication.`interface`.impl.bitmap
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
+import com.example.myapplication.`interface`.BitmapLoaderStrategy
+import com.example.myapplication.`interface`.BitmapSaveStrategy
 import com.google.gson.Gson
 import java.io.File
 import java.io.FileOutputStream
 
-class FileDraftStrategy(
+class FileDraftImpl(
     private val context: Context
 ) : BitmapLoaderStrategy, BitmapSaveStrategy {
     override fun loadDraft(): Pair<Bitmap, FloatArray>? {

@@ -1,4 +1,4 @@
-package com.example.myapplication.strategy.bitmap
+package com.example.myapplication.`interface`
 
 import android.graphics.Bitmap
 

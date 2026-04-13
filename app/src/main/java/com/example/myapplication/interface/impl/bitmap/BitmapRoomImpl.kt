@@ -1,10 +1,12 @@
-package com.example.myapplication.strategy.bitmap
+package com.example.myapplication.`interface`.impl.bitmap
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import com.example.myapplication.`interface`.BitmapLoaderStrategy
+import com.example.myapplication.`interface`.BitmapSaveStrategy
 
-class BitmapRoomStrategy(
+class BitmapRoomImpl(
     private val context: Context
 ) : BitmapSaveStrategy, BitmapLoaderStrategy {
     override suspend fun saveDraft(

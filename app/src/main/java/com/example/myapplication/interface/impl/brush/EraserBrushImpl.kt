@@ -1,8 +1,9 @@
-package com.example.myapplication.strategy.brush
+package com.example.myapplication.`interface`.impl.brush
 
 import android.graphics.Color
+import com.example.myapplication.`interface`.BaseBrush
 
-class EraserBrush : BaseBrush() {
+class EraserBrushImpl : BaseBrush() {
 
     init {
         paint.color = Color.WHITE

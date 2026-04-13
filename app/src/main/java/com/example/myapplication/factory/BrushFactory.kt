@@ -2,9 +2,9 @@ package com.example.myapplication.factory
 
 import android.graphics.Color
 import com.example.myapplication.enum.DrawingTool
-import com.example.myapplication.strategy.brush.BaseBrush
-import com.example.myapplication.strategy.brush.EraserBrush
-import com.example.myapplication.strategy.brush.PenBrush
+import com.example.myapplication.`interface`.BaseBrush
+import com.example.myapplication.`interface`.impl.brush.EraserBrushImpl
+import com.example.myapplication.`interface`.impl.brush.PenBrushImpl
 
 object BrushFactory {
 
@@ -12,12 +12,12 @@ object BrushFactory {
 
     init {
         register(DrawingTool.BRUSH) { color, stroke, _ ->
-            PenBrush().apply {
+            PenBrushImpl().apply {
                 updateConfig(color, stroke)
             }
         }
         register(DrawingTool.ERASE) { _, _, eraseSize ->
-            EraserBrush().apply {
+            EraserBrushImpl().apply {
                 updateConfig(Color.WHITE, eraseSize)
             }
         }
