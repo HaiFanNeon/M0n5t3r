@@ -316,7 +316,8 @@ class DrawingView @JvmOverloads constructor(
                 inverseMatrix.mapPoints(pts)
                 
                 currentBrush?.onTouchMove(pts[0], pts[1], editLastX, editLastY)
-                
+
+
                 editLastX = pts[0]
                 editLastY = pts[1]
 
