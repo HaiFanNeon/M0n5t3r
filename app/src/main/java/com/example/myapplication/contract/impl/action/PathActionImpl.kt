@@ -1,9 +1,9 @@
-package com.example.myapplication.`interface`.impl.action
+package com.example.myapplication.contract.impl.action
 
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
-import com.example.myapplication.`interface`.DrawAction
+import com.example.myapplication.contract.DrawAction
 
 
 class PathActionImpl(val paint: Paint, val path: Path): DrawAction {

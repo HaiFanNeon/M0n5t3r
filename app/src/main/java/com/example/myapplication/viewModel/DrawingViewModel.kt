@@ -28,9 +28,9 @@ class DrawingViewModel(private val bitmapFileManager: BitmapFileManager ): ViewM
         }
     }
 
-    fun setBrushColor(colorr: Int) {
+    fun setBrushColor(color: Int) {
         _uiState.update {
-            it.copy(color = colorr)
+            it.copy(color = color)
         }
 
     }

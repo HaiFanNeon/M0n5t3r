@@ -1,11 +1,11 @@
-package com.example.myapplication.`interface`.impl.bitmap
+package com.example.myapplication.contract.impl.bitmap
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
-import com.example.myapplication.`interface`.BitmapLoaderStrategy
-import com.example.myapplication.`interface`.BitmapSaveStrategy
+import com.example.myapplication.contract.BitmapLoaderStrategy
+import com.example.myapplication.contract.BitmapSaveStrategy
 import com.google.gson.Gson
 import java.io.File
 import java.io.FileOutputStream
@@ -29,9 +29,9 @@ class FileDraftImpl(
         values[4] = 1f
         values[8] = 1f
         val jsonString = json.readText(Charsets.UTF_8)
-        val prase = Gson().fromJson(jsonString, FloatArray::class.java)
-        if (prase != null && prase.size == 0) {
-            values = prase
+        val parsed = Gson().fromJson(jsonString, FloatArray::class.java)
+        if (parsed != null && parsed.size == 9) {
+            values = parsed
         }
         return Pair(BitmapFactory.decodeFile(file.absolutePath), values)
 

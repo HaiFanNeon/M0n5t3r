@@ -1,9 +1,9 @@
-package com.example.myapplication.`interface`
+package com.example.myapplication.contract
 
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
-import com.example.myapplication.`interface`.impl.action.PathActionImpl
+import com.example.myapplication.contract.impl.action.PathActionImpl
 
 abstract class BaseBrush {
     val path = Path()
@@ -25,7 +25,7 @@ abstract class BaseBrush {
     }
 
     open fun onTouchMove(x: Float, y: Float, lastX: Float, lastY: Float) {
-        path.quadTo(x, y, (lastX + x) / 2f, (lastY + y) / 2f)
+        path.quadTo(lastX, lastY, (lastX + x) / 2f, (lastY + y) / 2f)
     }
 
     open fun onTouchUp(bitmapCanvas: Canvas): PathActionImpl {

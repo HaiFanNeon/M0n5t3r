@@ -1,10 +1,10 @@
-package com.example.myapplication.`interface`.impl.bitmap
+package com.example.myapplication.contract.impl.bitmap
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
-import com.example.myapplication.`interface`.BitmapLoaderStrategy
-import com.example.myapplication.`interface`.BitmapSaveStrategy
+import com.example.myapplication.contract.BitmapLoaderStrategy
+import com.example.myapplication.contract.BitmapSaveStrategy
 
 class BitmapRoomImpl(
     private val context: Context

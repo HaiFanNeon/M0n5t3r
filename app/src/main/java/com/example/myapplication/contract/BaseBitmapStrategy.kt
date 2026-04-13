@@ -1,4 +1,4 @@
-package com.example.myapplication.`interface`
+package com.example.myapplication.contract
 
 import android.graphics.Bitmap
 

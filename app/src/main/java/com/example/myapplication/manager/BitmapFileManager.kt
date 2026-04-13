@@ -1,9 +1,9 @@
 package com.example.myapplication.manager
 
 import android.graphics.Bitmap
-import com.example.myapplication.`interface`.BitmapExportStrategy
-import com.example.myapplication.`interface`.BitmapLoaderStrategy
-import com.example.myapplication.`interface`.BitmapSaveStrategy
+import com.example.myapplication.contract.BitmapExportStrategy
+import com.example.myapplication.contract.BitmapLoaderStrategy
+import com.example.myapplication.contract.BitmapSaveStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

@@ -1,4 +1,4 @@
-package com.example.myapplication.`interface`.impl.bitmap
+package com.example.myapplication.contract.impl.bitmap
 
 import android.content.ContentValues
 import android.content.Context
@@ -8,7 +8,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import com.example.myapplication.`interface`.BitmapExportStrategy
+import com.example.myapplication.contract.BitmapExportStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

@@ -16,20 +16,16 @@ import com.example.myapplication.config.DrawingViewModelFactory
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.enum.DrawingTool
 import com.example.myapplication.manager.BitmapFileManager
-import com.example.myapplication.`interface`.impl.bitmap.BitmapRoomImpl
-import com.example.myapplication.`interface`.impl.bitmap.FileDraftImpl
-import com.example.myapplication.`interface`.impl.bitmap.MediaBitmapExportImpl
+import com.example.myapplication.contract.impl.bitmap.BitmapRoomImpl
+import com.example.myapplication.contract.impl.bitmap.FileDraftImpl
+import com.example.myapplication.contract.impl.bitmap.MediaBitmapExportImpl
 
 import com.example.myapplication.viewModel.DrawingViewModel
 import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity(){
-    private var bitmapFileManager: BitmapFileManager = BitmapFileManager(
-        saveStrategy = BitmapRoomImpl(this),
-        loadStrategy = FileDraftImpl(this),
-        exportStrategy = MediaBitmapExportImpl(this),
-    )
+    private lateinit var bitmapFileManager: BitmapFileManager
     private val viewModel: DrawingViewModel by viewModels {
         DrawingViewModelFactory(bitmapFileManager)
     }
@@ -43,6 +39,12 @@ class MainActivity : ComponentActivity(){
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
         enableEdgeToEdge()
         setContentView(viewBinding.root)
+
+        bitmapFileManager = BitmapFileManager(
+            saveStrategy = FileDraftImpl(this),
+            loadStrategy = FileDraftImpl(this),
+            exportStrategy = MediaBitmapExportImpl(this),
+        )
 
         loadDraw()
         viewBinding.drawingView.onSaveBitmapListener = {
@@ -81,7 +83,7 @@ class MainActivity : ComponentActivity(){
         })
 
         with(viewBinding) {
-            btnEarse.setOnClickListener {
+             btnErase.setOnClickListener {
                 viewModel.setDrawingTool(DrawingTool.ERASE)
             }
             btnBrush.setOnClickListener {
@@ -94,7 +96,7 @@ class MainActivity : ComponentActivity(){
                 viewModel.exportBitmap(viewBinding.drawingView.getBitmap())
             }
             btnPreview.setOnClickListener{
-                viewModel.setDrawingTool(DrawingTool.REVIEW)
+                viewModel.setDrawingTool(DrawingTool.PREVIEW)
             }
             btnColorBlack.setOnClickListener {
                 viewModel.setBrushColor(Color.BLACK)
@@ -124,12 +126,12 @@ class MainActivity : ComponentActivity(){
                         state.eraseSize
                     )
 
-                    val isReview = state.drawingTool == DrawingTool.REVIEW
+                    val isReview = state.drawingTool == DrawingTool.PREVIEW
 
                     viewBinding.btnPreview.isSelected = isReview
                     viewBinding.btnBrush.isSelected =
                         !isReview && state.drawingTool == DrawingTool.BRUSH
-                    viewBinding.btnEarse.isSelected =
+                    viewBinding.btnErase.isSelected =
                         !isReview && state.drawingTool == DrawingTool.ERASE
 
                 }

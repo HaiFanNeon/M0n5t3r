@@ -18,8 +18,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.graphics.createBitmap
 import com.example.myapplication.enum.*
 import com.example.myapplication.factory.BrushFactory
-import com.example.myapplication.`interface`.impl.action.PathActionImpl
-import com.example.myapplication.`interface`.BaseBrush
+import com.example.myapplication.contract.impl.action.PathActionImpl
+import com.example.myapplication.contract.BaseBrush
 
 class DrawingView @JvmOverloads constructor(
     context: Context,
@@ -63,20 +63,19 @@ class DrawingView @JvmOverloads constructor(
         canvas.drawColor(Color.WHITE)
         canvas.drawBitmap(bitmap, 0f, 0f, null)
         
-        if (getModel() != DrawingTool.REVIEW) {
+        if (getCurrentTool() != DrawingTool.PREVIEW) {
             currentBrush?.drawPreview(canvas)
         }
         canvas.restore()
     }
 
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         event ?: return false
         if (!::bitmap.isInitialized) return false
         val x: Float = event.x
         val y: Float = event.y
-        val isReviewMode = getModel() == DrawingTool.REVIEW
+        val isReviewMode = getCurrentTool() == DrawingTool.PREVIEW
         return if (isReviewMode) {
             reviewTouchEvent(event, x, y)
         } else {
@@ -139,12 +138,13 @@ class DrawingView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun getModel(): DrawingTool {
+    private fun getCurrentTool(): DrawingTool {
         return currentTool
     }
 
     fun updateConfig(tool: DrawingTool, color: Int, stroke: Float, eraseSize: Float) {
-        if (tool == currentTool) {
+        if (tool != currentTool) {
+            currentTool = tool
             currentBrush = BrushFactory.create(tool, color, stroke, eraseSize)
         } else {
             currentBrush?.updateConfig(color, stroke)
@@ -180,7 +180,7 @@ class DrawingView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun extBitmap(x: Float, y:Float) {
+    private fun expandBitmapIfNeeded(x: Float, y:Float) {
         val limit = 100f
 
         if (x in 0f..(bitmap.width.toFloat() - limit) && y in 0f..(bitmap.height.toFloat() - limit)) return
@@ -294,7 +294,7 @@ class DrawingView @JvmOverloads constructor(
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
 
-                extBitmap(canvasX, canvasY)
+                expandBitmapIfNeeded(canvasX, canvasY)
                 pts[0] = x
                 pts[1] = y
                 transformMatrix.invert(inverseMatrix)
@@ -309,7 +309,7 @@ class DrawingView @JvmOverloads constructor(
 
             MotionEvent.ACTION_MOVE -> {
 
-                extBitmap(canvasX, canvasY)
+                expandBitmapIfNeeded(canvasX, canvasY)
 
                 pts[0] = x
                 pts[1] = y

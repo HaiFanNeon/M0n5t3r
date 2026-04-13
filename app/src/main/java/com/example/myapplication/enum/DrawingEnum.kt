@@ -4,5 +4,5 @@ enum class DrawingTool {
     NONE,
     BRUSH,
     ERASE,
-    REVIEW
+    PREVIEW
 }
